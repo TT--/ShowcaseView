@@ -30,7 +30,7 @@ public class CustomShowcaseActivity extends Activity {
                 .build();
     }
 
-    private static class CustomShowcaseView implements ShowcaseDrawer {
+    static class CustomShowcaseView implements ShowcaseDrawer {
 
         private final float width;
         private final float height;

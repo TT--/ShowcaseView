@@ -20,6 +20,13 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.RectF;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -37,6 +44,7 @@ import android.widget.TextView;
 
 import com.espian.showcaseview.sample.R;
 import com.github.amlcurran.showcaseview.OnShowcaseEventListener;
+import com.github.amlcurran.showcaseview.ShowcaseDrawer;
 import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.github.amlcurran.showcaseview.sample.animations.AnimationSampleActivity;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
@@ -70,18 +78,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int margin = ((Number) (getResources().getDisplayMetrics().density * 12)).intValue();
         lps.setMargins(margin, margin, margin, margin);
 
-        ViewTarget target = new ViewTarget(R.id.buttonBlocked, this);
+        ViewTarget target = new ViewTarget(R.id.listView, this);
         sv = new ShowcaseView.Builder(this)
-                .withMaterialShowcase()
                 .setTarget(target)
-                .setContentTitle(R.string.showcase_main_title)
-                .setContentText(R.string.showcase_main_message)
-                .setStyle(R.style.CustomShowcaseTheme2)
                 .setShowcaseEventListener(this)
-                .replaceEndButton(R.layout.view_custom_button)
+                .setShowcaseDrawer(new CustomShowcaseActivity.CustomShowcaseView(getResources()))
+                .replaceEndButton(R.layout.view_custom_button)  // "got it" text on lower left
                 .build();
         sv.setButtonPosition(lps);
     }
+
+
+
+
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     private void dimView(View view) {
@@ -97,7 +106,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (viewId) {
             case R.id.buttonBlocked:
                 if (sv.isShown()) {
-                    sv.setStyle(R.style.CustomShowcaseTheme);
+             //       sv.setStyle(R.style.CustomShowcaseTheme);
                 } else {
                     sv.show();
                 }
@@ -176,6 +185,76 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             this.titleRes = titleRes;
             this.summaryRes = summaryRes;
             this.activityClass = activityClass;
+        }
+
+    }
+
+    private static class CustomShowcaseView implements ShowcaseDrawer {
+
+        private final float width;
+        private final float height;
+        private final Paint eraserPaint;
+        private final Paint basicPaint;
+        private final int eraseColour;
+        private final RectF renderRect;
+
+        public CustomShowcaseView(Resources resources) {
+            width = resources.getDimension(R.dimen.custom_showcase_width);
+            height = resources.getDimension(R.dimen.custom_showcase_height);
+            PorterDuffXfermode xfermode = new PorterDuffXfermode(PorterDuff.Mode.MULTIPLY);
+            eraserPaint = new Paint();
+            eraserPaint.setColor(0xFFFFFF);
+            eraserPaint.setAlpha(0);
+            eraserPaint.setXfermode(xfermode);
+            eraserPaint.setAntiAlias(true);
+            eraseColour = resources.getColor(R.color.custom_showcase_bg);
+            basicPaint = new Paint();
+            renderRect = new RectF();
+        }
+
+        @Override
+        public void setShowcaseColour(int color) {
+            eraserPaint.setColor(color);
+        }
+
+        @Override
+        public void drawShowcase(Bitmap buffer, float x, float y, float scaleMultiplier) {
+            Canvas bufferCanvas = new Canvas(buffer);
+            renderRect.left = x - width / 2f;
+            renderRect.right = x + width / 2f;
+            renderRect.top = y - height / 2f;
+            renderRect.bottom = y + height / 2f;
+            bufferCanvas.drawRect(renderRect, eraserPaint);
+        }
+
+        @Override
+        public int getShowcaseWidth() {
+            return (int) width;
+        }
+
+        @Override
+        public int getShowcaseHeight() {
+            return (int) height;
+        }
+
+        @Override
+        public float getBlockedRadius() {
+            return width;
+        }
+
+        @Override
+        public void setBackgroundColour(int backgroundColor) {
+            // No-op, remove this from the API?
+        }
+
+        @Override
+        public void erase(Bitmap bitmapBuffer) {
+            bitmapBuffer.eraseColor(eraseColour);
+        }
+
+        @Override
+        public void drawToCanvas(Canvas canvas, Bitmap bitmapBuffer) {
+            canvas.drawBitmap(bitmapBuffer, 0, 0, basicPaint);
         }
 
     }
